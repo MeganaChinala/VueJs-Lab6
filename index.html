@@ -107,7 +107,7 @@
                         return response.json();
                     })
                     .then(myJson => this.stops = myJson)
-                    .then(() => { if (this.stops.length != 0) console.log("storing stop data success!!") });
+                    .then(() => { if (this.stops.length != 0) console.log("Stop data stored successfully!!") });
                 //code from (as provided in google doc guidelines): https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API
                 if ("geolocation" in navigator) 
                 {
@@ -122,7 +122,7 @@
                     }
                     function geo_error() 
                     {
-                        alert("Location not found.");
+                        alert("Location not found. Make sure location permissions or turned on or reload page");
                     }
                     var geo_options = 
                     {
