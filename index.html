@@ -3,72 +3,141 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width-device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>Vue Lab</title>
+    <title>Bus Stop Locator (VueJS)</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
         integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous" />
-</head>
-
-<body>
-    <div class="container">
-        <div id="app-4">
-            Message: {{ message }}
-        </div>
-
-        <div class="jumbotron">
-            <h1 class="display-4">Hello, world!</h1>
-            <p class="lead">This is a simple hero unit, a simple jumbotron-style component for calling extra attention
-                to featured content or information.</p>
-            <hr class="my-4">
-            <p>It uses utility classes for typography and spacing to space content out within the larger container.</p>
-            <a class="btn btn-primary btn-lg" href="#" role="button">Learn more</a>
-        </div>
-           
-        <div id="todos">
-            <ol>
-                <li v-for="todo in todos" :key="todo.id">
-                    {{ todo.text }}
-                </li>
-            </ol>
-        </div>
-
-    </div>
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
         integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
         crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
-        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous">
-        </script>
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+        crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
-        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous">
-        </script>
-   
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+        crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+</head>
 
+<body>
+    <div class="container">
+
+    </div>
+
+    <div class="jumbotron">
+        <h1 class="display-4">Bus Stop Locator</h1>
+        <p class="lead">An online resource that shows your nearby bus stops</p>
+        <hr class="my-4">
+        <div id="app">
+            <form>
+                Number of stops to show: <input type="text" name="numberOfStops" v-model="numStops">
+                <br>
+                <br>
+            </form>
+            <div v-for="item in filteredStops">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">{{item.name}}</h5>
+                        <p class="card-text">{{item.description}}
+                            <br> Distance: {{item.distance.toPrecision(3)}} km
+                        </p>
+                    </div>
+                </div>
+                <br>
+            </div>
+        </div>
+    </div>
 
     <script>
-        var app = new Vue({
-            el: '#todos',
-            data: {
-                todos: [
-                    { text: 'Testing 1' },
-                    { text: 'Testing 2' },
-                    { text: 'Testing 3' }
-                ]
+        function toRad(number) 
+        {
+            return (number * Math.PI / 180);
+        }
+        function getDistance(lat1, lat2, lon1, lon2) 
+        {
+            //partner and I extracted code from this website with Oqi's approval: https://stackoverflow.com/questions/13840516/how-to-find-my-distance-to-a-known-location-in-javascript
+            //slight modifications in function parameter list
+            //Javascript in radians, so code was modified to convert immediately, and the initial locations passed were changed in accordance
+            let R = 6371; // Radius of the earth in km
+            let dLat = toRad(Math.abs(lat1 - lat2));  // Javascript functions in radians
+            let dLon = toRad(Math.abs(lon1 - lon2));
+            let a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            let d = R * c; // Distance in km
+            return d;
+        }
+        const app = new Vue({
+            el: '#app',
+            data: 
+            {
+                stops: [],
+                numStops: 10,
+                latitude: 0,
+                longitude: 0,
+                distance: 999999
+            },
+
+            computed: 
+            {
+                filteredStops: function () 
+                {
+                    this.stops.sort(function (a, b) { return a.distance - b.distance });
+                    return (this.stops.slice(0, this.numStops))
+                }
+            },
+            methods: 
+            {
+                computeDistance: function () 
+                {
+                    for (let i = 0; i < this.stops.length; i++) 
+                    {
+                        this.stops[i].distance = getDistance(this.latitude, this.stops[i].lat, this.longitude, this.stops[i].lon);
+                    }
+                }
+            },
+            created: function () 
+            {
+                fetch('https://utils.pauliankline.com/stops.json')
+                    .then(function (response) 
+                    {
+                        return response.json();
+                    })
+                    .then(myJson => this.stops = myJson)
+                    .then(() => { if (this.stops.length != 0) console.log("storing stop data success!!") });
+                //code from (as provided in google doc guidelines): https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API
+                if ("geolocation" in navigator) 
+                {
+                    function geo_success(position) 
+                    {
+                        this.latitude = position.coords.latitude
+                        this.longitude = position.coords.longitude;
+                        console.log("Latitude: " + this.latitude)
+                        console.log("Longitude: " + this.longitude)
+
+                        this.computeDistance();
+                    }
+                    function geo_error() 
+                    {
+                        alert("Location not found.");
+                    }
+                    var geo_options = 
+                    {
+                        enableHighAccuracy: true,
+                        maximumAge: 30000,
+                        timeout: 27000
+                    };
+                    navigator.geolocation.watchPosition(geo_success.bind(this), geo_error, geo_options);
+                }
+                else 
+                {
+                    console.log("User Location not detected. Allow location permissions or reload the page:'(");
+                }
             }
         })
-        const app4 = new Vue({
-            el: '#app-4',
-            data: {
-                message: 'Hello Vue!'
-            }
-        })
-               
-    </script>
-
-
-</body>
-
+        </script>
+    </body>
 </html>
